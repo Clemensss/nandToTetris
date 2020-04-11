@@ -1,0 +1,18 @@
+
+/*
+    This chip negates an input
+*/
+CHIP Negate {
+    IN 
+	in[16], n;
+
+    OUT out[16];
+    //BUILTIN Not16, Mux16;
+
+    PARTS:
+
+    Not16(in=in, out=notin);
+    Mux16(a=in, b=notin, sel=n, out=out);
+}
+
+

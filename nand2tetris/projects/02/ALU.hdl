@@ -14,7 +14,7 @@
  * if the ALU output < 0, ng is set to 1; otherwise ng is set to 0.
  */
 
-// Implementation: the ALU logic manipulates the x and y inputs
+/* Implementation: the ALU logic manipulates the x and y inputs
 // and operates on the resulting values, as follows:
 // if (zx == 1) set x = 0        // 16-bit constant
 // if (nx == 1) set x = !x       // bitwise not
@@ -24,7 +24,7 @@
 // if (f == 0)  set out = x & y  // bitwise and
 // if (no == 1) set out = !out   // bitwise not
 // if (out == 0) set zr = 1
-// if (out < 0) set ng = 1
+// if (out < 0) set ng = 1 */
 
 CHIP ALU {
     IN  
@@ -42,5 +42,21 @@ CHIP ALU {
         ng; // 1 if (out < 0),  0 otherwise
 
     PARTS:
-   // Put you code here:
+
+	/*operations*/
+	SetToZero(in=x, z=zx, out=x0);
+	SetToZero(in=y, z=zy, out=y0);
+	Negate(in=x0, n=nx, out=x1);
+	Negate(in=y0, n=ny, out=y1);
+	AndSum(x=x1, y=y1, f=f, out=out0);
+	
+	/*negate output*/
+	Negate(in=out0, n=no, out=out1);
+    
+	/* flags */
+	Negative(in=out1, out=ng);
+	Equal(in=out1, out=zr);
+	And16(a=out1, b=true, out=out);
 }
+
+

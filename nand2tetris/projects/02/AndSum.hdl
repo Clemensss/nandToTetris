@@ -1,0 +1,20 @@
+
+/*
+    this CHIP chooses between sum
+    and AND
+*/
+
+CHIP AndSum {
+    IN x[16], y[16], f;
+
+    OUT out[16];
+    //BUILTIN And16, Mux16;
+    PARTS:
+    
+    And16(a=x, b=y, out=out0);
+    Add16(a=x, b=y, out=out1);
+
+    Mux16(a=out0, b=out1, sel=f, out=out);
+}
+
+

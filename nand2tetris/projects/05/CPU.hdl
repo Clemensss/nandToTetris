@@ -39,42 +39,75 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    /*A inst */
 
-    Not(in=instruction[15], out=loadA);
-    ARegister(in=instruction[0..14], load=loadA, out=outA);
-    DRegister(in=false, load=false, out=outD);
+    /*Regs */
     
+    /*load a with num if loadAInstA true
+      else loadAInstC load aluOut */
+
+    Not(in=instruction[15], out=loadAInstA);
+    Xor(a=loadAInstA, b=loadAInstC, out=loadA);
+    
+    /*registers*/
+    ARegister(in=inA,load=loadA, out=outA);
+    DRegister(in=aluOut, load=loadRegD, out=outD);
+
+    /*A inst */
+    Mux16(a[0..14]=instruction[0..14], b=aluOut, 
+	    sel=instruction[15], out=inA);
+
     /* C inst
 	ALU inst */
     
     Mux16(a=outA, b=inM, sel=instruction[12], out=mOrA);
+	
+	/*alu input*/
     ALU(x=outD, y=mOrA, 
-	xz=instruction[11],
+
+	/*alu calc*/
+	zx=instruction[11],
 	nx=instruction[10],
-	yz=instruction[9],
+	zy=instruction[9],
 	ny=instruction[8],
 	f=instruction[7],
 	no=instruction[6],
-	/*who knows*/
-	out=aluout, out=outM,
+
+	/*alu out */
+	out=aluOut, out=outM, /* outM output */
 	zr=zr,
 	ng=ng);
     
     /*dest inst*/
-    ARegister(in=aluout, load=instruction[5], out=jmpOutA);
-    DRegister(in=aluout, load=instruction[4], out=noUseOutD);
-    And(a=instruction[3], b=true, out=outToM);
+
+    /*load the registers or not 
+     load only if c instruction */
+    And(a=instruction[5], b=instruction[15], out=loadAInstC);
+    And(a=instruction[4], b=instruction[15], out=loadRegD);
+    And(a=instruction[3], b=instruction[15], out=writeM); /* writeM output */
+
+    And16(a=outA, b=true, out[0..14]=addressM); /* I think that does it*/
+
 
     /*JMP inst*/
-    And(a=instruction[1], b=zr, out=outZr);
-    And(a=instruction[0], b=ng. out=outNg);
 
+    /*greater than*/
     Or(a=zr, b=ng, out=OrJmp);
     Not(in=OrJmp, out=gt);
-    And(a=instruction[2], b=gt, out=outGt);
+    And(a=instruction[0], b=gt, out=outGt);
     
-    Or8Way(a=outZr, b=outNg, c=outGt, out=Jmp);
+    /*equal to*/
+    And(a=instruction[1], b=zr, out=outZr);
 
-    Mux4Way16(a=jmpOutA, b=false)
+    /*less than*/
+    And(a=instruction[2], b=ng, out=outNg);
+    
+    /*if any of those are true, then maybe jump*/
+    Or8Way(in[0]=outZr, in[1]=outNg, in[2]=outGt, out=maybeJmp);
+
+    /* jump only if c instruction */
+    And(a=maybeJmp, b=instruction[15], out=jmp);
+    Not(in=jmp, out=notJmp);
+
+    PC(in=outA, load=jmp, inc=notJmp,
+	reset=reset, out[0..14]=pc);/*pc output*/
 }
